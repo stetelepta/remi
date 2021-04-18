@@ -249,6 +249,7 @@ class PopMusicTransformer(object):
         # extract events
         all_events = []
         for path in midi_paths:
+            print(f"Extracting events for {path}")
             events = self.extract_events(path)
             all_events.append(events)
         # event to word
