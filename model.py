@@ -59,8 +59,7 @@ class PopMusicTransformer(object):
         self.checkpoint_path = checkpoint_path
         self.use_chords = use_chords
         self.group_size = group_size
-        if self.checkpoint_path:
-            self.create_model()
+        self.create_model()
 
     ########################################
     # create model
