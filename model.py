@@ -125,6 +125,9 @@ class PopMusicTransformer(object):
         self.sess = tf.compat.v1.Session(config=config)
         if self.checkpoint_path is not None:
             self.saver.restore(self.sess, self.checkpoint_path)
+        else:
+            init_op = tf.initialize_all_variables()
+            self.sess.run(init_op)
 
     ########################################
     # temperature sampling
