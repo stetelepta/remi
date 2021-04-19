@@ -174,6 +174,10 @@ class PopMusicTransformer(object):
     ########################################
     # generate
     ########################################
+    def generate_batch(self, number_of_results, n_target_bar, temperature, topk, output_path, prompt=None):
+        for i in range(number_of_results):
+            self.generate(n_target_bar, temperature, topk, output_path + "/result_{}.midi".format(i), prompt)
+
     def generate(self, n_target_bar, temperature, topk, output_path, prompt=None):
         # if prompt, load it. Or, random start
         if prompt:
