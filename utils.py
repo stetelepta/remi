@@ -387,7 +387,7 @@ def write_midi(words, word2event, output_path, prompt_path=None):
                 note.end += last_time
                 inst.notes.append(note)
 
-            midi.instruments.append(inst)
+            new_midi.instruments.append(inst)
 
         # write
         new_midi.dump(output_path)
