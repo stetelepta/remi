@@ -184,12 +184,12 @@ class PopMusicTransformer(object):
         if prompt:
             events = self.extract_events(prompt)
             words = [[self.event2word['{}_{}'.format(e.name, e.value)] for e in events]]
-            words[0].append(self.event2word['Bar_None'])
-            number_of_bars_in_prompt = words[0].count(self.event2word['Bar_None']) - 1
+            words[0].append(self.event2word['Bar_First'])
+            number_of_bars_in_prompt = words[0].count(self.event2word['Bar_None'])
         else:
             words = []
             for _ in range(self.batch_size):
-                ws = [self.event2word['Bar_None']]
+                ws = [self.event2word['Bar_First']]
                 if 'chord' in self.checkpoint_path:
                     tempo_classes = [v for k, v in self.event2word.items() if 'Tempo Class' in k]
                     tempo_values = [v for k, v in self.event2word.items() if 'Tempo Value' in k]

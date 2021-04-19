@@ -152,16 +152,26 @@ class Event(object):
 def item2event(groups):
     events = []
     n_downbeat = 0
+    first = True
     for i in range(len(groups)):
         if 'Note' not in [item.name for item in groups[i][1:-1]]:
             continue
         bar_st, bar_et = groups[i][0], groups[i][-1]
         n_downbeat += 1
-        events.append(Event(
-            name='Bar',
-            time=None,
-            value=None,
-            text='{}'.format(n_downbeat)))
+
+        if first:
+            events.append(Event(
+                name='Bar',
+                time=None,
+                value='First',
+                text='{}'.format(n_downbeat)))
+            first = False
+        else:
+            events.append(Event(
+                name='Bar',
+                time=None,
+                value=None,
+                text='{}'.format(n_downbeat)))
         for item in groups[i][1:-1]:
             # position
             flags = np.linspace(bar_st, bar_et, DEFAULT_FRACTION, endpoint=False)
