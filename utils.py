@@ -339,12 +339,7 @@ def write_midi(words, word2event, output_path, prompt_path=None):
     # write
     if prompt_path:
         midi = miditoolkit.midi.parser.MidiFile(prompt_path)
-        last_time = 0
-
-        for instrument in midi.instruments:
-            for note in instrument.notes:
-                if last_time < note.end:
-                    last_time += note.end
+        last_time = DEFAULT_RESOLUTION * 4 * 4
 
         new_midi = miditoolkit.midi.parser.MidiFile()
         new_midi.ticks_per_beat = DEFAULT_RESOLUTION
