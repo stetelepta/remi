@@ -40,13 +40,15 @@ def read_items(file_path, transposition_steps=0):
 
     notes.sort(key=lambda x: (x['note'].start, x['instrument'], x['note'].pitch))
     for note in notes:
-        adjusted_pitch = note['note'].pitch + transposition_steps
+        adjusted_pitch = note['note'].pitch
+        if note['note'].instrument != 128:
+            adjusted_pitch += transposition_steps
 
-        # To prevent invalid pitches
-        if adjusted_pitch < 0:
-            adjusted_pitch += 12
-        if adjusted_pitch > 127:
-            adjusted_pitch -= 12
+            # To prevent invalid pitches
+            if adjusted_pitch < 0:
+                adjusted_pitch += 12
+            if adjusted_pitch > 127:
+                adjusted_pitch -= 12
 
         note_items.append(Item(
             name='Note',
