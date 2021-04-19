@@ -244,7 +244,7 @@ def word_to_event(words, word2event):
     return events
 
 
-def write_midi(words, word2event, output_path, prompt_path=None):
+def write_midi(words, word2event, output_path, prompt_path=None, bars_from_prompt=4):
     events = word_to_event(words, word2event)
     # get downbeat and note (no time)
     temp_notes = []
@@ -339,7 +339,7 @@ def write_midi(words, word2event, output_path, prompt_path=None):
     # write
     if prompt_path:
         midi = miditoolkit.midi.parser.MidiFile(prompt_path)
-        last_time = DEFAULT_RESOLUTION * 4 * 4
+        last_time = DEFAULT_RESOLUTION * 4 * bars_from_prompt
 
         new_midi = miditoolkit.midi.parser.MidiFile()
         new_midi.ticks_per_beat = DEFAULT_RESOLUTION
@@ -360,7 +360,8 @@ def write_midi(words, word2event, output_path, prompt_path=None):
         for instrument in midi.instruments:
             program = 128 if instrument.is_drum else instrument.program
             for note in instrument.notes:
-                existing_notes.setdefault(program, []).append(note)
+                if note.end <= last_time:
+                    existing_notes.setdefault(program, []).append(note)
 
         # write chord into marker
         if len(temp_chords) > 0:
