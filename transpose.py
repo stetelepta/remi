@@ -23,7 +23,7 @@ inverted_keys = {v: k for k, v in keys.items()}
 def find_key(midi_path):
     score = music21.converter.parse(midi_path)
     key = score.analyze('key')
-    return key.tonic.name, key.mode
+    return key.tonic.name.replace('-', ''), key.mode
 
 
 def get_number_of_steps_for_transposition_to(midi_path, target_key):
