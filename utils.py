@@ -412,3 +412,4 @@ def write_midi(words, word2event, output_path, prompt_path=None, bars_in_prompt=
 
         # write
         midi.dump(output_path)
+    print(f"Written midi to {output_path}")
