@@ -35,7 +35,7 @@ def get_number_of_steps_for_transposition_to(midi_path, target_key):
 
     transpose_steps_up = target_key_nr - key_nr
     transpose_steps_down = key_nr - target_key_nr
-    if transpose_steps_up > abs(transpose_steps_down):
+    if abs(transpose_steps_up) > abs(transpose_steps_down):
         transpose_steps = transpose_steps_down
     else:
         transpose_steps = transpose_steps_up
