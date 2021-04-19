@@ -354,7 +354,7 @@ def write_midi(words, word2event, output_path, prompt_path=None):
         midi.tempo_changes = temp_tempos
 
         existing_notes = {}
-        for instrument in midi:
+        for instrument in midi.instruments:
             for note in instrument.notes:
                 existing_notes.setdefault(instrument.program, []).append(note)
 
