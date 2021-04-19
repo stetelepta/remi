@@ -244,7 +244,7 @@ def word_to_event(words, word2event):
     return events
 
 
-def write_midi(words, word2event, output_path, prompt_path=None, bars_from_prompt=4):
+def write_midi(words, word2event, output_path, prompt_path=None, bars_in_prompt=4):
     events = word_to_event(words, word2event)
     # get downbeat and note (no time)
     temp_notes = []
