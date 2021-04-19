@@ -237,6 +237,11 @@ class PopMusicTransformer(object):
                 logits=_logit,
                 temperature=temperature,
                 topk=topk)
+
+            # Replace bar first with bar none when generating
+            if word == self.event2word['Bar_First']:
+                word = self.event2word['Bar_None']
+
             words[0].append(word)
             # if bar event (only work for batch_size=1)
             if word == self.event2word['Bar_None']:
