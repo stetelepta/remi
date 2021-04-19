@@ -5,6 +5,7 @@ import modules
 import pickle
 import utils
 import time
+import transpose
 
 
 class PopMusicTransformer(object):
@@ -26,7 +27,8 @@ class PopMusicTransformer(object):
                  d_ff=2048,
                  learning_rate=0.0002,
                  use_chords=True,
-                 group_size=5
+                 group_size=5,
+                 transpose_input_midi_to_key=None
                  ):
         # Reset tensorflow default graph
         tf.reset_default_graph()
@@ -59,6 +61,7 @@ class PopMusicTransformer(object):
         self.checkpoint_path = checkpoint_path
         self.use_chords = use_chords
         self.group_size = group_size
+        self.transpose_input_midi_to_key = transpose_input_midi_to_key
         self.create_model()
 
     ########################################
@@ -150,7 +153,11 @@ class PopMusicTransformer(object):
     # extract events for prompt continuation
     ########################################
     def extract_events(self, input_path):
-        note_items, tempo_items = utils.read_items(input_path)
+        transposition_steps = 0
+        if self.transpose_input_midi_to_key:
+            transposition_steps = transpose.get_number_of_steps_for_transposition_to(input_path,
+                                                                                     self.transpose_input_midi_to_key)
+        note_items, tempo_items = utils.read_items(input_path, transposition_steps=transposition_steps)
         note_items = utils.quantize_items(note_items)
         max_time = note_items[-1].end
         if self.use_chords:
@@ -274,27 +281,27 @@ class PopMusicTransformer(object):
         segments = []
         for words in all_words:
             pairs = []
-            for i in range(0, len(words)-self.x_len-1, self.x_len):
-                x = words[i:i+self.x_len]
-                y = words[i+1:i+self.x_len+1]
+            for i in range(0, len(words) - self.x_len - 1, self.x_len):
+                x = words[i:i + self.x_len]
+                y = words[i + 1:i + self.x_len + 1]
                 pairs.append([x, y])
             pairs = np.array(pairs)
             # abandon the last
-            for i in np.arange(0, len(pairs)-self.group_size, self.group_size*2):
-                data = pairs[i:i+self.group_size]
+            for i in np.arange(0, len(pairs) - self.group_size, self.group_size * 2):
+                data = pairs[i:i + self.group_size]
                 if len(data) == self.group_size:
                     segments.append(data)
 
         for words in all_words:
             pairs = []
             for i in range(len(words) - 1, self.x_len, -self.x_len):
-                x = words[i-self.x_len-1:i-1]
-                y = words[i-self.x_len:i]
+                x = words[i - self.x_len - 1:i - 1]
+                y = words[i - self.x_len:i]
                 pairs.append([x, y])
             pairs = np.array(pairs[::-1])
             # abandon the last
-            for i in np.arange(0, len(pairs)-self.group_size, self.group_size*2):
-                data = pairs[i:i+self.group_size]
+            for i in np.arange(0, len(pairs) - self.group_size, self.group_size * 2):
+                data = pairs[i:i + self.group_size]
                 if len(data) == self.group_size:
                     segments.append(data)
         segments = np.array(segments)
