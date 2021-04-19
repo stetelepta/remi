@@ -185,7 +185,7 @@ class PopMusicTransformer(object):
             events = self.extract_events(prompt)
             words = [[self.event2word['{}_{}'.format(e.name, e.value)] for e in events]]
             words[0].append(self.event2word['Bar_None'])
-            number_of_bars_in_prompt = words[0].count('Bar_None') - 1
+            number_of_bars_in_prompt = words[0].count(self.event2word['Bar_None']) - 1
         else:
             words = []
             for _ in range(self.batch_size):
