@@ -36,7 +36,7 @@ def read_items(file_path, transposition_steps=0):
     note_items = []
     for index, instrument in enumerate(midi_obj.instruments):
         for note in instrument.notes:
-            notes.append({'note': note + transposition_steps, 'instrument': 128 if instrument.is_drum else instrument.program})
+            notes.append({'note': note, 'instrument': 128 if instrument.is_drum else instrument.program})
 
     notes.sort(key=lambda x: (x['note'].start, x['instrument'], x['note'].pitch))
     for note in notes:
@@ -46,7 +46,7 @@ def read_items(file_path, transposition_steps=0):
             end=note['note'].end,
             velocity=note['note'].velocity,
             instrument=note['instrument'],
-            pitch=note['note'].pitch))
+            pitch=note['note'].pitch + transposition_steps))
     note_items.sort(key=lambda x: x.start)
     # tempo
     tempo_items = []
