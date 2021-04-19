@@ -157,6 +157,8 @@ class PopMusicTransformer(object):
         if self.transpose_input_midi_to_key:
             transposition_steps = transpose.get_number_of_steps_for_transposition_to(input_path,
                                                                                      self.transpose_input_midi_to_key)
+            if transposition_steps != 0:
+                print("Transposing {} steps to {}.".format(transposition_steps, self.transpose_input_midi_to_key))
         note_items, tempo_items = utils.read_items(input_path, transposition_steps=transposition_steps)
         note_items = utils.quantize_items(note_items)
         max_time = note_items[-1].end
