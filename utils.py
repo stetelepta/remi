@@ -339,13 +339,8 @@ def write_midi(words, word2event, output_path, prompt_path=None):
     # write
     if prompt_path:
         midi = miditoolkit.midi.parser.MidiFile(prompt_path)
-        #
         last_time = DEFAULT_RESOLUTION * 4 * 4
-        # note shift
-        for note in notes:
-            note.start += last_time
-            note.end += last_time
-        midi.instruments[0].notes.extend(notes)
+
         # tempo changes
         temp_tempos = []
         for tempo in midi.tempo_changes:
@@ -357,11 +352,31 @@ def write_midi(words, word2event, output_path, prompt_path=None):
             st += last_time
             temp_tempos.append(miditoolkit.midi.containers.TempoChange(bpm, st))
         midi.tempo_changes = temp_tempos
+
+        existing_notes = {}
+        for instrument in midi:
+            for note in instrument.notes:
+                existing_notes.setdefault(instrument.program, []).append(note)
+
         # write chord into marker
         if len(temp_chords) > 0:
             for c in chords:
                 midi.markers.append(
                     miditoolkit.midi.containers.Marker(text=c[1], time=c[0] + last_time))
+
+        for instrument, instrument_notes in notes.items():
+            program = 0 if instrument == 128 else instrument
+            is_drum = True if instrument == 128 else False
+            inst = miditoolkit.midi.containers.Instrument(program, is_drum=is_drum)
+
+            if program in existing_notes:
+                inst.notes.extend(existing_notes[instrument])
+
+            # note shift and add
+            for note in instrument_notes:
+                note.start += last_time
+                note.end += last_time
+                inst.notes.append(note)
     else:
         midi = miditoolkit.midi.parser.MidiFile()
         midi.ticks_per_beat = DEFAULT_RESOLUTION
