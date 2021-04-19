@@ -311,6 +311,7 @@ class PopMusicTransformer(object):
                 if len(data) == self.group_size:
                     segments.append(data)
         segments = np.array(segments)
+        print(f"Prepared {len(segments)} segments.")
         return segments
 
     ########################################
