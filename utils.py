@@ -292,13 +292,13 @@ def write_midi(words, word2event, output_path, prompt_path=None):
     # get specific time for notes
     ticks_per_beat = DEFAULT_RESOLUTION
     ticks_per_bar = DEFAULT_RESOLUTION * 4  # assume 4/4
-    notes = []
+    notes = {}
     current_bar = 0
     for note in temp_notes:
         if note == 'Bar':
             current_bar += 1
         else:
-            position, velocity, pitch, duration = note
+            position, velocity, pitch, duration, instrument = note
             # position (start time)
             current_bar_st = current_bar * ticks_per_bar
             current_bar_et = (current_bar + 1) * ticks_per_bar
@@ -306,7 +306,7 @@ def write_midi(words, word2event, output_path, prompt_path=None):
             st = flags[position]
             # duration (end time)
             et = st + duration
-            notes.append(miditoolkit.Note(velocity, pitch, st, et))
+            notes.setdefault(instrument, []).append(miditoolkit.Note(velocity, pitch, st, et))
     # get specific time for chords
     if len(temp_chords) > 0:
         chords = []
