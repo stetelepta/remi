@@ -30,13 +30,22 @@ def get_number_of_steps_for_transposition_to(midi_path, target_key):
     key, mode = find_key(midi_path)
     key_nr = keys[key]
     target_key_nr = keys[target_key]
+
     if mode == 'minor':
         target_key_nr -= 3
 
-    transpose_steps_up = target_key_nr - key_nr
-    transpose_steps_down = key_nr - target_key_nr
-    if abs(transpose_steps_up) > abs(transpose_steps_down):
-        transpose_steps = transpose_steps_down
+    above_key_target_nr = key_nr
+    if above_key_target_nr < key_nr:
+        above_key_target_nr += 12
+
+    below_key_target_nr = key_nr
+    if below_key_target_nr > key_nr:
+        below_key_target_nr -= 12
+
+    transpose_steps_down = key_nr - below_key_target_nr
+    transpose_steps_up = above_key_target_nr - key_nr
+    if transpose_steps_up > transpose_steps_down:
+        transpose_steps = -transpose_steps_down
     else:
         transpose_steps = transpose_steps_up
 
