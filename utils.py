@@ -355,8 +355,9 @@ def write_midi(words, word2event, output_path, prompt_path=None):
 
         existing_notes = {}
         for instrument in midi.instruments:
+            program = 128 if instrument.is_drum else instrument.program
             for note in instrument.notes:
-                existing_notes.setdefault(instrument.program, []).append(note)
+                existing_notes.setdefault(program, []).append(note)
 
         # write chord into marker
         if len(temp_chords) > 0:
