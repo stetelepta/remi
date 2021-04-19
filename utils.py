@@ -339,19 +339,27 @@ def write_midi(words, word2event, output_path, prompt_path=None):
     # write
     if prompt_path:
         midi = miditoolkit.midi.parser.MidiFile(prompt_path)
-        last_time = DEFAULT_RESOLUTION * 4 * 4
+        last_time = 0
+
+        for instrument in midi.instruments:
+            for note in instrument.notes:
+                if last_time < note.end:
+                    last_time += note.end
+
+        new_midi = miditoolkit.midi.parser.MidiFile()
+        new_midi.ticks_per_beat = DEFAULT_RESOLUTION
 
         # tempo changes
         temp_tempos = []
         for tempo in midi.tempo_changes:
-            if tempo.time < DEFAULT_RESOLUTION * 4 * 4:
+            if tempo.time < last_time:
                 temp_tempos.append(tempo)
             else:
                 break
         for st, bpm in tempos:
             st += last_time
             temp_tempos.append(miditoolkit.midi.containers.TempoChange(bpm, st))
-        midi.tempo_changes = temp_tempos
+        new_midi.tempo_changes = temp_tempos
 
         existing_notes = {}
         for instrument in midi.instruments:
@@ -362,7 +370,7 @@ def write_midi(words, word2event, output_path, prompt_path=None):
         # write chord into marker
         if len(temp_chords) > 0:
             for c in chords:
-                midi.markers.append(
+                new_midi.markers.append(
                     miditoolkit.midi.containers.Marker(text=c[1], time=c[0] + last_time))
 
         for instrument, instrument_notes in notes.items():
@@ -378,6 +386,11 @@ def write_midi(words, word2event, output_path, prompt_path=None):
                 note.start += last_time
                 note.end += last_time
                 inst.notes.append(note)
+
+            midi.instruments.append(inst)
+
+        # write
+        new_midi.dump(output_path)
     else:
         midi = miditoolkit.midi.parser.MidiFile()
         midi.ticks_per_beat = DEFAULT_RESOLUTION
@@ -400,5 +413,6 @@ def write_midi(words, word2event, output_path, prompt_path=None):
             inst = miditoolkit.midi.containers.Instrument(program, is_drum=is_drum)
             inst.notes = instrument_notes
             midi.instruments.append(inst)
-    # write
-    midi.dump(output_path)
+
+        # write
+        midi.dump(output_path)
