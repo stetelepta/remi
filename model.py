@@ -1,3 +1,4 @@
+import random
 import tensorflow as tf
 import numpy as np
 import miditoolkit
@@ -29,8 +30,11 @@ class PopMusicTransformer(object):
                  use_chords=True,
                  group_size=5,
                  transpose_input_midi_to_key=None,
-                 exchangeable_words=[]
+                 exchangeable_words=None
                  ):
+        if exchangeable_words is None:
+            exchangeable_words = []
+
         # Reset tensorflow default graph
         tf.reset_default_graph()
 
@@ -63,6 +67,7 @@ class PopMusicTransformer(object):
         self.use_chords = use_chords
         self.group_size = group_size
         self.transpose_input_midi_to_key = transpose_input_midi_to_key
+        self.exchangeable_words = [self.event2word[x] for x in exchangeable_words]
         self.create_model()
 
     ########################################
@@ -342,13 +347,13 @@ class PopMusicTransformer(object):
                 batch_m = [np.zeros((self.mem_len, self.batch_size, self.d_model), dtype=np.float32) for _ in
                            range(self.n_layer)]
 
-
-
-
-
                 for j in range(self.group_size):
                     batch_x = segments[:, j, 0, :]
                     batch_y = segments[:, j, 1, :]
+
+                    # Exchange words
+                    self.exchange_words(batch_x, batch_y)
+
                     # prepare feed dict
                     feed_dict = {self.x: batch_x, self.y: batch_y}
                     for m, m_np in zip(self.mems_i, batch_m):
@@ -364,6 +369,25 @@ class PopMusicTransformer(object):
             # stop
             if stop_loss is not None and np.mean(total_loss) <= stop_loss:
                 break
+
+    def exchange_words(self, batch_x, batch_y):
+        exchangeable_words_mapping = self.create_exchangeable_words_mapping()
+        for i in range(len(batch_x)):
+            for j in range(len(batch_x[i])):
+                batch_x[i][j] = exchangeable_words_mapping[batch_x[i][j]]
+                batch_y[i][j] = exchangeable_words_mapping[batch_y[i][j]]
+
+    def create_exchangeable_words_mapping(self):
+        mapping = {}
+
+        for words in self.exchangeable_words:
+            shuffled = words.copy()
+            random.shuffle(shuffled)
+
+            for i in range(len(words)):
+                mapping[words[i]] = shuffled[i]
+
+        return mapping
 
     ########################################
     # close
