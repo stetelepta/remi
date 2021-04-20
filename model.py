@@ -352,7 +352,8 @@ class PopMusicTransformer(object):
                     batch_y = segments[:, j, 1, :]
 
                     # Exchange words
-                    self.exchange_words(batch_x, batch_y)
+                    if self.exchangeable_words is not None and len(self.exchangeable_words) > 0:
+                        self.exchange_words(batch_x, batch_y)
 
                     # prepare feed dict
                     feed_dict = {self.x: batch_x, self.y: batch_y}
