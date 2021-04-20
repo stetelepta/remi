@@ -67,7 +67,7 @@ class PopMusicTransformer(object):
         self.use_chords = use_chords
         self.group_size = group_size
         self.transpose_input_midi_to_key = transpose_input_midi_to_key
-        self.exchangeable_words = [self.event2word[x] for x in exchangeable_words]
+        self.exchangeable_words = [[self.event2word[x] for x in y] for y in exchangeable_words]
         self.create_model()
 
     ########################################
