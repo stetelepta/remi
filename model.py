@@ -375,8 +375,10 @@ class PopMusicTransformer(object):
         exchangeable_words_mapping = self.create_exchangeable_words_mapping()
         for i in range(len(batch_x)):
             for j in range(len(batch_x[i])):
-                batch_x[i][j] = exchangeable_words_mapping[batch_x[i][j]]
-                batch_y[i][j] = exchangeable_words_mapping[batch_y[i][j]]
+                if batch_x[i][j] in exchangeable_words_mapping:
+                    batch_x[i][j] = exchangeable_words_mapping[batch_x[i][j]]
+                if batch_y[i][j] in exchangeable_words_mapping:
+                    batch_y[i][j] = exchangeable_words_mapping[batch_y[i][j]]
 
     def create_exchangeable_words_mapping(self):
         mapping = {}
