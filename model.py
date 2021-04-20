@@ -187,6 +187,9 @@ class PopMusicTransformer(object):
     def generate(self, n_target_bar, temperature, topk, output_path, prompt=None):
         # if prompt, load it. Or, random start
         number_of_bars_in_prompt = 0
+        first_note = True
+        duration_classes = [v for k, v in self.event2word.items() if 'Note Duration' in k]
+
         if prompt:
             events = self.extract_events(prompt)
             words = [[self.event2word['{}_{}'.format(e.name, e.value)] for e in events]]
@@ -243,6 +246,12 @@ class PopMusicTransformer(object):
                 logits=_logit,
                 temperature=temperature,
                 topk=topk)
+
+            # First note gets a completely random duration
+            if first_note and 'Note Duration' in self.word2event[word]:
+                word = np.random.choice(duration_classes)
+                first_note = False
+
             words[0].append(word)
             # if bar event (only work for batch_size=1)
             if word == self.event2word['Bar_None']:
