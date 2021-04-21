@@ -154,7 +154,7 @@ class PopMusicTransformer(object):
             candi_probs /= sum(candi_probs)
             
             probs = []
-            for i in range(candi_index):
+            for i in range(len(candi_index)):
                 probs[self.word2event(candi_index[i])] = candi_probs[i]
                 
             self.probs.append(probs)
