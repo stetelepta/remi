@@ -155,7 +155,7 @@ class PopMusicTransformer(object):
             
             probs = {}
             for i in range(len(candi_index)):
-                probs[self.word2event(candi_index[i])] = candi_probs[i]
+                probs[self.word2event[candi_index[i]]] = candi_probs[i]
                 
             self.probs.append(probs)
 
