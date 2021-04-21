@@ -151,6 +151,10 @@ class PopMusicTransformer(object):
             candi_probs = [probs[i] for i in candi_index]
             # normalize probs
             candi_probs /= sum(candi_probs)
+
+            for i in range(candi_index):
+                print(f"{self.word2event(candi_index[i])}: {candi_probs[i]}")
+
             # choose by predicted probs
             prediction = np.random.choice(candi_index, size=1, p=candi_probs)[0]
         return prediction
