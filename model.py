@@ -1,3 +1,4 @@
+import random
 import tensorflow as tf
 import numpy as np
 import miditoolkit
@@ -28,8 +29,12 @@ class PopMusicTransformer(object):
                  learning_rate=0.0002,
                  use_chords=True,
                  group_size=5,
-                 transpose_input_midi_to_key=None
+                 transpose_input_midi_to_key=None,
+                 exchangeable_words=None
                  ):
+        if exchangeable_words is None:
+            exchangeable_words = []
+
         # Reset tensorflow default graph
         tf.reset_default_graph()
 
@@ -62,6 +67,7 @@ class PopMusicTransformer(object):
         self.use_chords = use_chords
         self.group_size = group_size
         self.transpose_input_midi_to_key = transpose_input_midi_to_key
+        self.exchangeable_words = [[self.event2word[x] for x in y] for y in exchangeable_words]
         self.create_model()
 
     ########################################
@@ -181,6 +187,9 @@ class PopMusicTransformer(object):
     def generate(self, n_target_bar, temperature, topk, output_path, prompt=None):
         # if prompt, load it. Or, random start
         number_of_bars_in_prompt = 0
+        first_note = True
+        duration_classes = [v for k, v in self.event2word.items() if 'Note Duration' in k]
+
         if prompt:
             events = self.extract_events(prompt)
             words = [[self.event2word['{}_{}'.format(e.name, e.value)] for e in events]]
@@ -237,6 +246,12 @@ class PopMusicTransformer(object):
                 logits=_logit,
                 temperature=temperature,
                 topk=topk)
+
+            # First note gets a completely random duration
+            if first_note and 'Note Duration' in self.word2event[word]:
+                word = np.random.choice(duration_classes)
+                first_note = False
+
             words[0].append(word)
             # if bar event (only work for batch_size=1)
             if word == self.event2word['Bar_None']:
@@ -263,58 +278,65 @@ class PopMusicTransformer(object):
     ########################################
     def prepare_data(self, midi_paths):
         # extract events
-        all_events = []
+        segments = []
         for path in midi_paths:
+            all_events = []
+
             print(f"Extracting events for {path}")
             events = self.extract_events(path)
             all_events.append(events)
-        # event to word
-        all_words = []
-        for events in all_events:
-            words = []
-            for event in events:
-                e = '{}_{}'.format(event.name, event.value)
-                if e in self.event2word:
-                    words.append(self.event2word[e])
-                else:
-                    # OOV
-                    if event.name == 'Note Velocity':
-                        # replace with max velocity based on our training data
-                        words.append(self.event2word['Note Velocity_21'])
-                    else:
-                        # something is wrong
-                        # you should handle it for your own purpose
-                        print('something is wrong! {}'.format(e))
-            all_words.append(words)
-        # to training data
-        segments = []
-        for words in all_words:
-            pairs = []
-            for i in range(0, len(words) - self.x_len - 1, self.x_len):
-                x = words[i:i + self.x_len]
-                y = words[i + 1:i + self.x_len + 1]
-                pairs.append([x, y])
-            pairs = np.array(pairs)
-            # abandon the last
-            for i in np.arange(0, len(pairs) - self.group_size, self.group_size * 2):
-                data = pairs[i:i + self.group_size]
-                if len(data) == self.group_size:
-                    segments.append(data)
 
-        for words in all_words:
-            pairs = []
-            for i in range(len(words) - 1, self.x_len, -self.x_len):
-                x = words[i - self.x_len - 1:i - 1]
-                y = words[i - self.x_len:i]
-                pairs.append([x, y])
-            pairs = np.array(pairs[::-1])
-            # abandon the last
-            for i in np.arange(0, len(pairs) - self.group_size, self.group_size * 2):
-                data = pairs[i:i + self.group_size]
-                if len(data) == self.group_size:
-                    segments.append(data)
+            # event to word
+            all_words = []
+            for events in all_events:
+                words = []
+                for event in events:
+                    e = '{}_{}'.format(event.name, event.value)
+                    if e in self.event2word:
+                        words.append(self.event2word[e])
+                    else:
+                        # OOV
+                        if event.name == 'Note Velocity':
+                            # replace with max velocity based on our training data
+                            words.append(self.event2word['Note Velocity_21'])
+                        else:
+                            # something is wrong
+                            # you should handle it for your own purpose
+                            print('something is wrong! {}'.format(e))
+                all_words.append(words)
+
+            # to training data
+            new_segments = []
+            for words in all_words:
+                pairs = []
+                for i in range(0, len(words) - self.x_len - 1, self.x_len):
+                    x = words[i:i + self.x_len]
+                    y = words[i + 1:i + self.x_len + 1]
+                    pairs.append([x, y])
+                pairs = np.array(pairs)
+                # abandon the last
+                for i in np.arange(0, len(pairs) - self.group_size, self.group_size * 2):
+                    data = pairs[i:i + self.group_size]
+                    if len(data) == self.group_size:
+                        new_segments.append(data)
+
+            # Create reverse segments
+            for words in all_words:
+                pairs = []
+                for i in range(len(words) - 1, self.x_len, -self.x_len):
+                    x = words[i - self.x_len - 1:i - 1]
+                    y = words[i - self.x_len:i]
+                    pairs.append([x, y])
+                pairs = np.array(pairs[::-1])
+                # abandon the last
+                for i in np.arange(0, len(pairs) - self.group_size, self.group_size * 2):
+                    data = pairs[i:i + self.group_size]
+                    if len(data) == self.group_size:
+                        new_segments.append(data)
+
+            print(f"Prepared {len(new_segments)} segments.")
+            segments.extend(new_segments)
         segments = np.array(segments)
-        print(f"Prepared {len(segments)} segments.")
         return segments
 
     ########################################
@@ -333,9 +355,15 @@ class PopMusicTransformer(object):
                 segments = training_data[self.batch_size * i:self.batch_size * (i + 1)]
                 batch_m = [np.zeros((self.mem_len, self.batch_size, self.d_model), dtype=np.float32) for _ in
                            range(self.n_layer)]
+
                 for j in range(self.group_size):
                     batch_x = segments[:, j, 0, :]
                     batch_y = segments[:, j, 1, :]
+
+                    # Exchange words
+                    if self.exchangeable_words is not None and len(self.exchangeable_words) > 0:
+                        self.exchange_words(batch_x, batch_y)
+
                     # prepare feed dict
                     feed_dict = {self.x: batch_x, self.y: batch_y}
                     for m, m_np in zip(self.mems_i, batch_m):
@@ -351,6 +379,27 @@ class PopMusicTransformer(object):
             # stop
             if stop_loss is not None and np.mean(total_loss) <= stop_loss:
                 break
+
+    def exchange_words(self, batch_x, batch_y):
+        exchangeable_words_mapping = self.create_exchangeable_words_mapping()
+        for i in range(len(batch_x)):
+            for j in range(len(batch_x[i])):
+                if batch_x[i][j] in exchangeable_words_mapping:
+                    batch_x[i][j] = exchangeable_words_mapping[batch_x[i][j]]
+                if batch_y[i][j] in exchangeable_words_mapping:
+                    batch_y[i][j] = exchangeable_words_mapping[batch_y[i][j]]
+
+    def create_exchangeable_words_mapping(self):
+        mapping = {}
+
+        for words in self.exchangeable_words:
+            shuffled = words.copy()
+            random.shuffle(shuffled)
+
+            for i in range(len(words)):
+                mapping[words[i]] = shuffled[i]
+
+        return mapping
 
     ########################################
     # close
