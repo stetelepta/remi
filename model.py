@@ -355,33 +355,38 @@ class PopMusicTransformer(object):
         training_data = training_data[index]
         num_batches = len(training_data) // self.batch_size
         print('num_batches:', num_batches)
+        print('training_data.shape:', training_data.shape)
         st = time.time()
         for e in range(epochs):
             total_loss = []
             for i in range(num_batches):
                 segments = training_data[self.batch_size * i:self.batch_size * (i + 1)]
+                
                 batch_m = [np.zeros((self.mem_len, self.batch_size, self.d_model), dtype=np.float32) for _ in
                            range(self.n_layer)]
 
                 for j in range(self.group_size):
-                    batch_x = segments[:, j, 0, :]
-                    batch_y = segments[:, j, 1, :]
+                    try:
+                        batch_x = segments[:, j, 0, :]
+                        batch_y = segments[:, j, 1, :]
 
-                    # Exchange words
-                    if self.exchangeable_words is not None and len(self.exchangeable_words) > 0:
-                        self.exchange_words(batch_x, batch_y)
+                        # Exchange words
+                        if self.exchangeable_words is not None and len(self.exchangeable_words) > 0:
+                            self.exchange_words(batch_x, batch_y)
 
-                    # prepare feed dict
-                    feed_dict = {self.x: batch_x, self.y: batch_y}
-                    for m, m_np in zip(self.mems_i, batch_m):
-                        feed_dict[m] = m_np
-                    # run
-                    _, gs_, loss_, new_mem_ = self.sess.run(
-                        [self.train_op, self.global_step, self.avg_loss, self.new_mem], feed_dict=feed_dict)
-                    batch_m = new_mem_
-                    total_loss.append(loss_)
-                    print('>>> Epoch: {}, Step: {}, Loss: {:.5f}, Time: {:.2f}'.format(e, gs_, loss_, time.time() - st))
-
+                        # prepare feed dict
+                        feed_dict = {self.x: batch_x, self.y: batch_y}
+                        for m, m_np in zip(self.mems_i, batch_m):
+                            feed_dict[m] = m_np
+                        # run
+                        _, gs_, loss_, new_mem_ = self.sess.run(
+                            [self.train_op, self.global_step, self.avg_loss, self.new_mem], feed_dict=feed_dict)
+                        batch_m = new_mem_
+                        total_loss.append(loss_)
+                        print('>>> Epoch: {}, Step: {}, Loss: {:.5f}, Time: {:.2f}'.format(e, gs_, loss_, time.time() - st))
+                    except Exception as err:
+                        print(f'Error in batch {i}, group: {j}, segments.shape: {segments.shape}, error: {err}')
+                        
                 # save checkpoint every 
                 if i % save_checkpoint_batch == 0:
                     print(f'>>> Saving checkpoint: {output_checkpoint_folder}/epoch-{e}_batch-{i}/model')
