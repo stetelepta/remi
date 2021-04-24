@@ -386,7 +386,7 @@ class PopMusicTransformer(object):
                 if i % save_checkpoint_batch == 0:
                     print(f'>>> Saving checkpoint: {output_checkpoint_folder}/epoch-{e}_batch-{i}/model')
                     self.saver.save(self.sess, f'{output_checkpoint_folder}/epoch-{e}_batch-{i}/model')
-            print(f'>>> Saving checkpoint: '{output_checkpoint_folder}/epoch-{e}_batch-{i}/model')
+            print(f'>>> Saving checkpoint: {output_checkpoint_folder}/epoch-{e}_batch-{i}/model')
             self.saver.save(self.sess, f'{output_checkpoint_folder}/epoch-{e}/model')
             
             # stop
