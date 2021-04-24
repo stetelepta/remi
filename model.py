@@ -348,12 +348,13 @@ class PopMusicTransformer(object):
     ########################################
     # finetune
     ########################################
-    def finetune(self, training_data, output_checkpoint_folder, epochs=200, stop_loss=None):
+    def finetune(self, training_data, output_checkpoint_folder, epochs=200, stop_loss=None, save_checkpoint_batch=100):
         # shuffle
         index = np.arange(len(training_data))
         np.random.shuffle(index)
         training_data = training_data[index]
         num_batches = len(training_data) // self.batch_size
+        print('num_batches:', num_batches)
         st = time.time()
         for e in range(epochs):
             total_loss = []
@@ -380,8 +381,14 @@ class PopMusicTransformer(object):
                     batch_m = new_mem_
                     total_loss.append(loss_)
                     print('>>> Epoch: {}, Step: {}, Loss: {:.5f}, Time: {:.2f}'.format(e, gs_, loss_, time.time() - st))
-            self.saver.save(self.sess,
-                            '{}/{}/model'.format(output_checkpoint_folder, e))
+
+                # save checkpoint every 
+                if i % save_checkpoint_batch == 0:
+                    print(f'>>> Saving checkpoint: {output_checkpoint_folder}/epoch-{e}_batch-{i}/model')
+                    self.saver.save(self.sess, f'{output_checkpoint_folder}/epoch-{e}_batch-{i}/model')
+            print(f'>>> Saving checkpoint: '{output_checkpoint_folder}/epoch-{e}_batch-{i}/model')
+            self.saver.save(self.sess, f'{output_checkpoint_folder}/epoch-{e}/model')
+            
             # stop
             if stop_loss is not None and np.mean(total_loss) <= stop_loss:
                 break
