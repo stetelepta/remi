@@ -10,7 +10,9 @@ import transpose
 
 # run as tf1
 import tensorflow.compat.v1 as tf
+
 tf.disable_v2_behavior()
+
 
 class PopMusicTransformer(object):
     ########################################
@@ -33,7 +35,8 @@ class PopMusicTransformer(object):
                  use_chords=True,
                  group_size=5,
                  transpose_input_midi_to_key=None,
-                 exchangeable_words=None
+                 exchangeable_words=None,
+                 transpose_to_all_keys=False
                  ):
         if exchangeable_words is None:
             exchangeable_words = []
@@ -71,6 +74,7 @@ class PopMusicTransformer(object):
         self.group_size = group_size
         self.transpose_input_midi_to_key = transpose_input_midi_to_key
         self.exchangeable_words = [[self.event2word[x] for x in y] for y in exchangeable_words]
+        self.transpose_to_all_keys = transpose_to_all_keys
         self.create_model()
 
     ########################################
@@ -161,13 +165,13 @@ class PopMusicTransformer(object):
     ########################################
     # extract events for prompt continuation
     ########################################
-    def extract_events(self, input_path):
-        transposition_steps = 0
+    def extract_events(self, input_path, transposition_steps=0):
         if self.transpose_input_midi_to_key:
             transposition_steps = transpose.get_number_of_steps_for_transposition_to(input_path,
                                                                                      self.transpose_input_midi_to_key)
-            if transposition_steps != 0:
-                print("Transposing {} steps to {}.".format(transposition_steps, self.transpose_input_midi_to_key))
+        if transposition_steps != 0:
+            print("Transposing {} steps to {}.".format(transposition_steps, self.transpose_input_midi_to_key))
+
         note_items, tempo_items = utils.read_items(input_path, transposition_steps=transposition_steps)
         note_items = utils.quantize_items(note_items)
         max_time = note_items[-1].end
@@ -282,66 +286,72 @@ class PopMusicTransformer(object):
     def prepare_data(self, midi_paths):
         # extract events
         segments = []
+
+        transposition_steps = [0]
+        if self.transpose_to_all_keys:
+            transposition_steps = [-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5]
+
         for path in midi_paths:
-            try:
-                all_events = []
+            for transposition_step in transposition_steps:
+                try:
+                    all_events = []
 
-                print(f"Extracting events for {path}")
-                events = self.extract_events(path)
-                all_events.append(events)
+                    print(f"Extracting events for {path}")
+                    events = self.extract_events(path, transposition_step)
+                    all_events.append(events)
 
-                # event to word
-                all_words = []
-                for events in all_events:
-                    words = []
-                    for event in events:
-                        e = '{}_{}'.format(event.name, event.value)
-                        if e in self.event2word:
-                            words.append(self.event2word[e])
-                        else:
-                            # OOV
-                            if event.name == 'Note Velocity':
-                                # replace with max velocity based on our training data
-                                words.append(self.event2word['Note Velocity_21'])
+                    # event to word
+                    all_words = []
+                    for events in all_events:
+                        words = []
+                        for event in events:
+                            e = '{}_{}'.format(event.name, event.value)
+                            if e in self.event2word:
+                                words.append(self.event2word[e])
                             else:
-                                # something is wrong
-                                # you should handle it for your own purpose
-                                print('something is wrong! {}'.format(e))
-                    all_words.append(words)
+                                # OOV
+                                if event.name == 'Note Velocity':
+                                    # replace with max velocity based on our training data
+                                    words.append(self.event2word['Note Velocity_21'])
+                                else:
+                                    # something is wrong
+                                    # you should handle it for your own purpose
+                                    print('something is wrong! {}'.format(e))
+                        all_words.append(words)
 
-                # to training data
-                new_segments = []
-                for words in all_words:
-                    pairs = []
-                    for i in range(0, len(words) - self.x_len - 1, self.x_len):
-                        x = words[i:i + self.x_len]
-                        y = words[i + 1:i + self.x_len + 1]
-                        pairs.append([x, y])
-                    pairs = np.array(pairs)
-                    # abandon the last
-                    for i in np.arange(0, len(pairs) - self.group_size, self.group_size * 2):
-                        data = pairs[i:i + self.group_size]
-                        if len(data) == self.group_size:
-                            new_segments.append(data)
+                    # to training data
+                    new_segments = []
+                    for words in all_words:
+                        pairs = []
+                        for i in range(0, len(words) - self.x_len - 1, self.x_len):
+                            x = words[i:i + self.x_len]
+                            y = words[i + 1:i + self.x_len + 1]
+                            pairs.append([x, y])
+                        pairs = np.array(pairs)
+                        # abandon the last
+                        for i in np.arange(0, len(pairs) - self.group_size, self.group_size * 2):
+                            data = pairs[i:i + self.group_size]
+                            if len(data) == self.group_size:
+                                new_segments.append(data)
 
-                # Create reverse segments
-                for words in all_words:
-                    pairs = []
-                    for i in range(len(words) - 1, self.x_len, -self.x_len):
-                        x = words[i - self.x_len - 1:i - 1]
-                        y = words[i - self.x_len:i]
-                        pairs.append([x, y])
-                    pairs = np.array(pairs[::-1])
-                    # abandon the last
-                    for i in np.arange(0, len(pairs) - self.group_size, self.group_size * 2):
-                        data = pairs[i:i + self.group_size]
-                        if len(data) == self.group_size:
-                            new_segments.append(data)
+                    # Create reverse segments
+                    for words in all_words:
+                        pairs = []
+                        for i in range(len(words) - 1, self.x_len, -self.x_len):
+                            x = words[i - self.x_len - 1:i - 1]
+                            y = words[i - self.x_len:i]
+                            pairs.append([x, y])
+                        pairs = np.array(pairs[::-1])
+                        # abandon the last
+                        for i in np.arange(0, len(pairs) - self.group_size, self.group_size * 2):
+                            data = pairs[i:i + self.group_size]
+                            if len(data) == self.group_size:
+                                new_segments.append(data)
 
-                print(f"Prepared {len(new_segments)} segments.")
-                segments.extend(new_segments)
-            except Exception as e:
-                print(f"error processing {path}, error: {e}")
+                    print(f"Prepared {len(new_segments)} segments.")
+                    segments.extend(new_segments)
+                except Exception as e:
+                    print(f"error processing {path}, error: {e}")
         segments = np.array(segments)
         return segments
 
@@ -361,7 +371,7 @@ class PopMusicTransformer(object):
             total_loss = []
             for i in range(num_batches):
                 segments = training_data[self.batch_size * i:self.batch_size * (i + 1)]
-                
+
                 batch_m = [np.zeros((self.mem_len, self.batch_size, self.d_model), dtype=np.float32) for _ in
                            range(self.n_layer)]
 
@@ -383,17 +393,18 @@ class PopMusicTransformer(object):
                             [self.train_op, self.global_step, self.avg_loss, self.new_mem], feed_dict=feed_dict)
                         batch_m = new_mem_
                         total_loss.append(loss_)
-                        print('>>> Epoch: {}, Step: {}, Loss: {:.5f}, Time: {:.2f}'.format(e, gs_, loss_, time.time() - st))
+                        print('>>> Epoch: {}, Step: {}, Loss: {:.5f}, Time: {:.2f}'.format(e, gs_, loss_,
+                                                                                           time.time() - st))
                     except Exception as err:
                         print(f'Error in batch {i}, group: {j}, segments.shape: {segments.shape}, error: {err}')
-                        
+
                 # save checkpoint every 
                 if i % save_checkpoint_batch == 0:
                     print(f'>>> Saving checkpoint: {output_checkpoint_folder}/epoch-{e}_batch-{i}/model')
                     self.saver.save(self.sess, f'{output_checkpoint_folder}/epoch-{e}_batch-{i}/model')
             print(f'>>> Saving checkpoint: {output_checkpoint_folder}/epoch-{e}_batch-{i}/model')
             self.saver.save(self.sess, f'{output_checkpoint_folder}/epoch-{e}/model')
-            
+
             # stop
             if stop_loss is not None and np.mean(total_loss) <= stop_loss:
                 break
