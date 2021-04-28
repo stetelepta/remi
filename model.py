@@ -289,7 +289,7 @@ class PopMusicTransformer(object):
 
         transposition_steps = [0]
         if self.transpose_to_all_keys:
-            transposition_steps = [-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5]
+            transposition_steps = [-2, -1, 0, 1, 2, 3, 4, 5]
 
         for path in midi_paths:
             for transposition_step in transposition_steps:
