@@ -35,8 +35,16 @@ def read_items(file_path, transposition_steps=0):
     notes = []
     note_items = []
     for index, instrument in enumerate(midi_obj.instruments):
+
+        if index == 0:
+            program = 65
+        elif index == 1:
+            program = 25
+        else:
+            program = 1
+
         for note in instrument.notes:
-            notes.append({'note': note, 'instrument': 128 if instrument.is_drum else instrument.program})
+            notes.append({'note': note, 'instrument': program})
 
     notes.sort(key=lambda x: (x['note'].start, x['instrument'], x['note'].pitch))
     for note in notes:
