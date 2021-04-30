@@ -44,7 +44,7 @@ def read_items(file_path, transposition_steps=0, is_pop909=False):
             else:
                 program = 1
         else:
-            program = 128 if instrument.is_drum else instrument.program
+            program = 128 if instrument.is_drum else (instrument.program + 1)
 
         for note in instrument.notes:
             notes.append({'note': note, 'instrument': program})
