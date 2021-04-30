@@ -165,14 +165,14 @@ class PopMusicTransformer(object):
     ########################################
     # extract events for prompt continuation
     ########################################
-    def extract_events(self, input_path, transposition_steps=0):
+    def extract_events(self, input_path, transposition_steps=0, is_pop909=False):
         if self.transpose_input_midi_to_key:
             transposition_steps = transpose.get_number_of_steps_for_transposition_to(input_path,
                                                                                      self.transpose_input_midi_to_key)
         if transposition_steps != 0:
             print("Transposing {} steps to {}.".format(transposition_steps, self.transpose_input_midi_to_key))
 
-        note_items, tempo_items = utils.read_items(input_path, transposition_steps=transposition_steps)
+        note_items, tempo_items = utils.read_items(input_path, transposition_steps=transposition_steps, is_pop909=is_pop909)
         note_items = utils.quantize_items(note_items)
         max_time = note_items[-1].end
         if self.use_chords:
@@ -283,7 +283,7 @@ class PopMusicTransformer(object):
     ########################################
     # prepare training data
     ########################################
-    def prepare_data(self, midi_paths):
+    def prepare_data(self, midi_paths, is_pop909=False):
         # extract events
         segments = []
 
@@ -297,7 +297,7 @@ class PopMusicTransformer(object):
                     all_events = []
 
                     print(f"Extracting events for {path}")
-                    events = self.extract_events(path, transposition_step)
+                    events = self.extract_events(path, transposition_step, is_pop909)
                     all_events.append(events)
 
                     # event to word

@@ -29,19 +29,22 @@ class Item(object):
 
 
 # read notes and tempo changes from midi (assume there is only one track)
-def read_items(file_path, transposition_steps=0):
+def read_items(file_path, transposition_steps=0, is_pop909=False):
     midi_obj = miditoolkit.midi.parser.MidiFile(file_path)
     # note
     notes = []
     note_items = []
     for index, instrument in enumerate(midi_obj.instruments):
 
-        if index == 0:
-            program = 65
-        elif index == 1:
-            program = 25
+        if is_pop909:
+            if index == 0:
+                program = 65
+            elif index == 1:
+                program = 25
+            else:
+                program = 1
         else:
-            program = 1
+            program = 128 if instrument.is_drum else instrument.program
 
         for note in instrument.notes:
             notes.append({'note': note, 'instrument': program})
