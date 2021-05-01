@@ -375,7 +375,7 @@ def write_midi(words, word2event, output_path, prompt_path=None, bars_in_prompt=
             inst = miditoolkit.midi.containers.Instrument(program, is_drum=is_drum)
 
             if program in existing_notes:
-                inst.notes.extend(existing_notes[instrument])
+                inst.notes.extend(existing_notes[program])
 
             # note shift and add
             for note in instrument_notes:
