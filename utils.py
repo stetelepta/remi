@@ -370,7 +370,7 @@ def write_midi(words, word2event, output_path, prompt_path=None, bars_in_prompt=
                     miditoolkit.midi.containers.Marker(text=c[1], time=c[0] + last_time))
 
         for instrument, instrument_notes in notes.items():
-            program = 0 if instrument == 128 else instrument
+            program = 128 if instrument.is_drum else instrument.program
             is_drum = True if instrument == 128 else False
             inst = miditoolkit.midi.containers.Instrument(program, is_drum=is_drum)
 
