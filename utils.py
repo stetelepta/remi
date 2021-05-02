@@ -38,11 +38,11 @@ def read_items(file_path, transposition_steps=0, is_pop909=False):
 
         if is_pop909:
             if index == 0:
-                program = 65
+                program = 64
             elif index == 1:
-                program = 25
+                program = 24
             else:
-                program = 1
+                program = 0
         else:
             program = 128 if instrument.is_drum else (instrument.program + 1)
 
