@@ -291,6 +291,7 @@ class PopMusicTransformer(object):
         if self.transpose_to_all_keys:
             transposition_steps = [-2, -1, 0, 1, 2, 3, 4, 5]
 
+        all_words = []
         for path in midi_paths:
             for transposition_step in transposition_steps:
                 try:
@@ -301,7 +302,6 @@ class PopMusicTransformer(object):
                     all_events.append(events)
 
                     # event to word
-                    all_words = []
                     for events in all_events:
                         words = []
                         for event in events:
@@ -318,40 +318,23 @@ class PopMusicTransformer(object):
                                     # you should handle it for your own purpose
                                     print('something is wrong! {}'.format(e))
                         all_words.append(words)
-
-                    # to training data
-                    new_segments = []
-                    for words in all_words:
-                        pairs = []
-                        for i in range(0, len(words) - self.x_len - 1, self.x_len):
-                            x = words[i:i + self.x_len]
-                            y = words[i + 1:i + self.x_len + 1]
-                            pairs.append([x, y])
-                        pairs = np.array(pairs)
-                        # abandon the last
-                        for i in np.arange(0, len(pairs) - self.group_size, self.group_size * 2):
-                            data = pairs[i:i + self.group_size]
-                            if len(data) == self.group_size:
-                                new_segments.append(data)
-
-                    # Create reverse segments
-                    for words in all_words:
-                        pairs = []
-                        for i in range(len(words) - 1, self.x_len, -self.x_len):
-                            x = words[i - self.x_len - 1:i - 1]
-                            y = words[i - self.x_len:i]
-                            pairs.append([x, y])
-                        pairs = np.array(pairs[::-1])
-                        # abandon the last
-                        for i in np.arange(0, len(pairs) - self.group_size, self.group_size * 2):
-                            data = pairs[i:i + self.group_size]
-                            if len(data) == self.group_size:
-                                new_segments.append(data)
-
-                    print(f"Prepared {len(new_segments)} segments.")
-                    segments.extend(new_segments)
                 except Exception as e:
                     print(f"error processing {path}, error: {e}")
+
+        # to training data
+        for words in all_words:
+            pairs = []
+            for i in range(0, len(words) - self.x_len - 1, self.x_len):
+                x = words[i:i + self.x_len]
+                y = words[i + 1:i + self.x_len + 1]
+                pairs.append([x, y])
+            pairs = np.array(pairs)
+            # abandon the last
+            for i in np.arange(0, len(pairs) - self.group_size, self.group_size * 2):
+                data = pairs[i:i + self.group_size]
+                if len(data) == self.group_size:
+                    segments.append(data)
+
         segments = np.array(segments)
         return segments
 
