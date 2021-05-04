@@ -187,9 +187,9 @@ class PopMusicTransformer(object):
     ########################################
     # generate
     ########################################
-    def generate_batch(self, number_of_results, n_target_bar, temperature, topk, output_path, prompt=None):
+    def generate_batch(self, number_of_results, n_target_bar, temperature, topk, output_path, prompt=None, chord_sequence=None):
         for i in range(number_of_results):
-            self.generate(n_target_bar, temperature, topk, output_path + "/result_{}.midi".format(i), prompt)
+            self.generate(n_target_bar, temperature, topk, output_path + "/result_{}.midi".format(i), prompt, chord_sequence=chord_sequence)
 
     def generate(self, n_target_bar, temperature, topk, output_path, prompt=None, chord_sequence=None):
         # if prompt, load it. Or, random start
