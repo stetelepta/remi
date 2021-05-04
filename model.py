@@ -191,11 +191,13 @@ class PopMusicTransformer(object):
         for i in range(number_of_results):
             self.generate(n_target_bar, temperature, topk, output_path + "/result_{}.midi".format(i), prompt)
 
-    def generate(self, n_target_bar, temperature, topk, output_path, prompt=None):
+    def generate(self, n_target_bar, temperature, topk, output_path, prompt=None, chord_sequence=None):
         # if prompt, load it. Or, random start
         number_of_bars_in_prompt = 0
         first_note = True
         duration_classes = [v for k, v in self.event2word.items() if 'Note Duration' in k]
+
+        current_chord_sequence_index = 0
 
         if prompt:
             events = self.extract_events(prompt)
@@ -253,6 +255,12 @@ class PopMusicTransformer(object):
                 logits=_logit,
                 temperature=temperature,
                 topk=topk)
+
+            if chord_sequence is not None and 'Chord' in self.word2event[word]:
+                word = self.event2word['Chord_' + chord_sequence[current_chord_sequence_index]]
+                current_chord_sequence_index += 1
+                if current_chord_sequence_index >= len(chord_sequence):
+                    current_chord_sequence_index = 0
 
             # First note gets a completely random duration
             if first_note and 'Note Duration' in self.word2event[word]:
